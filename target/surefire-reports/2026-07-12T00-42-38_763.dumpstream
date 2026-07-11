@@ -1,0 +1,5 @@
+# Created at 2026-07-12T00:42:39.316
+Boot Manifest-JAR contains absolute paths in classpath 'E:\webscraper (1)\webscraper\target\test-classes'
+Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+'other' has different root
+

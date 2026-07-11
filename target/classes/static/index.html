@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Spring Boot Web Scraper</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --border: #2a2e3a;
+    --text: #e7e9ee;
+    --muted: #9aa1b1;
+    --accent: #5b8def;
+    --accent-hover: #4676d6;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 40px 20px;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin-bottom: 4px; }
+  p.sub { color: var(--muted); margin-top: 0; margin-bottom: 28px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+  input[type=text], input[type=number] {
+    width: 100%;
+    padding: 10px 12px;
+    background: #10131a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.95rem;
+  }
+  .row { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 140px; }
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 11px 20px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    margin-top: 16px;
+  }
+  button:hover { background: var(--accent-hover); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .field-row { margin-bottom: 4px; }
+  #status { margin-top: 14px; font-size: 0.9rem; color: var(--muted); }
+  #error { color: #f28b82; margin-top: 14px; font-size: 0.9rem; display: none; }
+  .result-title { font-size: 1.1rem; margin: 0 0 4px 0; }
+  .meta-line { color: var(--muted); font-size: 0.85rem; margin-bottom: 14px; }
+  .section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin: 18px 0 8px 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+  ul { padding-left: 20px; margin: 0; }
+  li { margin-bottom: 4px; font-size: 0.9rem; word-break: break-word; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .stats { display: flex; gap: 20px; flex-wrap: wrap; }
+  .stat {
+    background: #10131a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    min-width: 110px;
+  }
+  .stat .num { font-size: 1.3rem; font-weight: 600; }
+  .stat .label { font-size: 0.75rem; color: var(--muted); }
+  pre {
+    background: #10131a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  #results { display: none; }
+  .imgs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .imgs img {
+    width: 90px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔎 Web Scraper</h1>
+  <p class="sub">Enter a URL to fetch its title, meta tags, headings, links, images and text content.</p>
+
+  <div class="panel">
+    <div class="field-row">
+      <label for="url">URL</label>
+      <input type="text" id="url" placeholder="https://example.com">
+    </div>
+    <div class="row">
+      <div>
+        <label for="selector">CSS selector (optional)</label>
+        <input type="text" id="selector" placeholder="e.g. h2.title, .price">
+      </div>
+      <div>
+        <label for="linkLimit">Link limit</label>
+        <input type="number" id="linkLimit" value="30" min="1" max="200">
+      </div>
+      <div>
+        <label for="imageLimit">Image limit</label>
+        <input type="number" id="imageLimit" value="20" min="1" max="200">
+      </div>
+    </div>
+    <button id="scrapeBtn" onclick="runScrape()">Scrape</button>
+    <div id="status"></div>
+    <div id="error"></div>
+  </div>
+
+  <div class="panel" id="results">
+    <h2 class="result-title" id="r-title"></h2>
+    <div class="meta-line" id="r-meta"></div>
+
+    <div class="stats">
+      <div class="stat"><div class="num" id="stat-links">0</div><div class="label">Links</div></div>
+      <div class="stat"><div class="num" id="stat-images">0</div><div class="label">Images</div></div>
+      <div class="stat"><div class="num" id="stat-headings">0</div><div class="label">Headings</div></div>
+      <div class="stat"><div class="num" id="stat-words">0</div><div class="label">Words</div></div>
+    </div>
+
+    <div class="section-title">Text Preview</div>
+    <pre id="r-preview"></pre>
+
+    <div class="section-title">Headings</div>
+    <ul id="r-headings"></ul>
+
+    <div class="section-title" id="selector-title" style="display:none;">Custom Selector Matches</div>
+    <ul id="r-selector"></ul>
+
+    <div class="section-title">Links</div>
+    <ul id="r-links"></ul>
+
+    <div class="section-title">Images</div>
+    <div class="imgs" id="r-images"></div>
+  </div>
+</div>
+
+<script>
+async function runScrape() {
+  const url = document.getElementById('url').value.trim();
+  const selector = document.getElementById('selector').value.trim();
+  const linkLimit = parseInt(document.getElementById('linkLimit').value, 10) || 30;
+  const imageLimit = parseInt(document.getElementById('imageLimit').value, 10) || 20;
+
+  const btn = document.getElementById('scrapeBtn');
+  const statusEl = document.getElementById('status');
+  const errorEl = document.getElementById('error');
+  const resultsEl = document.getElementById('results');
+
+  errorEl.style.display = 'none';
+  resultsEl.style.display = 'none';
+
+  if (!url) {
+    errorEl.textContent = 'Please enter a URL.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = 'Scraping...';
+
+  try {
+    const resp = await fetch('/api/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, selector, linkLimit, imageLimit })
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      throw new Error(data.message || 'Request failed');
+    }
+
+    renderResult(data);
+    statusEl.textContent = `Done · HTTP ${data.statusCode}`;
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+    statusEl.textContent = '';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderResult(data) {
+  document.getElementById('r-title').textContent = data.title || '(no title)';
+  document.getElementById('r-meta').textContent =
+    (data.metaDescription || 'No meta description') + (data.language ? ` · lang: ${data.language}` : '');
+
+  document.getElementById('stat-links').textContent = (data.links || []).length;
+  document.getElementById('stat-images').textContent = (data.images || []).length;
+  document.getElementById('stat-headings').textContent = (data.headings || []).length;
+  document.getElementById('stat-words').textContent = data.wordCount || 0;
+
+  document.getElementById('r-preview').textContent = data.textPreview || '';
+
+  const headingsList = document.getElementById('r-headings');
+  headingsList.innerHTML = '';
+  (data.headings || []).forEach(h => {
+    const li = document.createElement('li');
+    li.textContent = h;
+    headingsList.appendChild(li);
+  });
+
+  const selectorTitle = document.getElementById('selector-title');
+  const selectorList = document.getElementById('r-selector');
+  selectorList.innerHTML = '';
+  if (data.customSelectorMatches && data.customSelectorMatches.length > 0) {
+    selectorTitle.style.display = 'block';
+    data.customSelectorMatches.forEach(m => {
+      const li = document.createElement('li');
+      li.textContent = m;
+      selectorList.appendChild(li);
+    });
+  } else {
+    selectorTitle.style.display = 'none';
+  }
+
+  const linksList = document.getElementById('r-links');
+  linksList.innerHTML = '';
+  (data.links || []).forEach(l => {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = l.href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = l.text ? `${l.text} — ${l.href}` : l.href;
+    li.appendChild(a);
+    linksList.appendChild(li);
+  });
+
+  const imagesDiv = document.getElementById('r-images');
+  imagesDiv.innerHTML = '';
+  (data.images || []).forEach(src => {
+    const img = document.createElement('img');
+    img.src = src;
+    img.loading = 'lazy';
+    img.onerror = () => { img.style.display = 'none'; };
+    imagesDiv.appendChild(img);
+  });
+
+  document.getElementById('results').style.display = 'block';
+}
+
+document.getElementById('url').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') runScrape();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+com\example\webscraper\model\ScrapeResult$LinkItem$Builder.class
+com\example\webscraper\service\ScraperService.class
+com\example\webscraper\exception\ScrapingException.class
+com\example\webscraper\controller\ScrapeController.class
+com\example\webscraper\model\ScrapeResult$LinkItem.class
+com\example\webscraper\WebScraperApplication.class
+com\example\webscraper\model\ScrapeResult$Builder.class
+com\example\webscraper\exception\GlobalExceptionHandler.class
+com\example\webscraper\model\ScrapeRequest.class
+com\example\webscraper\model\ScrapeResult.class
