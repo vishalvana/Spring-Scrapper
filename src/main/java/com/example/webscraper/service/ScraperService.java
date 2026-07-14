@@ -11,7 +11,8 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
+import com.example.webscraper.exception.RobotsDisallowedException;
+import com.example.webscraper.robots.RobotsTxtService;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.LinkedHashSet;
@@ -21,6 +22,11 @@ import java.util.stream.Collectors;
 
 @Service
 public class ScraperService {
+    private final RobotsTxtService robotsTxtService;
+
+    public ScraperService(RobotsTxtService robotsTxtService) {
+        this.robotsTxtService = robotsTxtService;
+    }
 
     private static final Logger log = LoggerFactory.getLogger(ScraperService.class);
 
@@ -41,7 +47,10 @@ public class ScraperService {
         String url = request.getUrl().trim();
         int linkLimit = request.getLinkLimit() != null ? request.getLinkLimit() : DEFAULT_ITEM_LIMIT;
         int imageLimit = request.getImageLimit() != null ? request.getImageLimit() : DEFAULT_ITEM_LIMIT;
-
+        if (!robotsTxtService.isAllowed(url)) {
+            throw new RobotsDisallowedException(
+                    "Scraping " + url + " is disallowed by the site's robots.txt");
+        }
         try {
             Connection.Response response = Jsoup.connect(url)
                     .userAgent(USER_AGENT)

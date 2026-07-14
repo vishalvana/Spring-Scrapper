@@ -1,5 +1,5 @@
 package com.example.webscraper.exception;
-
+import com.example.webscraper.exception.RobotsDisallowedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -16,6 +16,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ScrapingException.class)
     public ResponseEntity<Map<String, Object>> handleScrapingException(ScrapingException ex) {
         return buildError(HttpStatus.BAD_GATEWAY, ex.getMessage());
+    }
+    @ExceptionHandler(RobotsDisallowedException.class)
+    public ResponseEntity<Map<String, Object>> handleRobotsDisallowed(RobotsDisallowedException ex) {
+        return buildError(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
