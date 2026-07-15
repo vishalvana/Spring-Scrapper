@@ -6,7 +6,9 @@ import com.example.webscraper.service.ScraperService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import com.example.webscraper.model.BatchScrapeItemResult;
+import com.example.webscraper.model.BatchScrapeRequest;
+import java.util.List;
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "*") // relax for demo purposes; restrict in production
@@ -17,7 +19,6 @@ public class ScrapeController {
     public ScrapeController(ScraperService scraperService) {
         this.scraperService = scraperService;
     }
-
     /**
      * POST /api/scrape
      * Body: { "url": "https://example.com", "selector": "h2.title", "linkLimit": 20, "imageLimit": 20 }
@@ -47,5 +48,10 @@ public class ScrapeController {
     @GetMapping("/health")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("OK");
+    }
+    @PostMapping("/scrape-batch")
+    public ResponseEntity<List<BatchScrapeItemResult>> scrapeBatch(@Valid @RequestBody BatchScrapeRequest request) {
+        List<BatchScrapeItemResult> results = scraperService.scrapeBatch(request);
+        return ResponseEntity.ok(results);
     }
 }

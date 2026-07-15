@@ -1,7 +1,8 @@
 package com.example.webscraper.service;
-
 import com.example.webscraper.exception.ScrapingException;
 import com.example.webscraper.model.ScrapeRequest;
+import com.example.webscraper.model.BatchScrapeItemResult;
+import com.example.webscraper.model.BatchScrapeRequest;
 import com.example.webscraper.model.ScrapeResult;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -19,11 +20,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 @Service
 public class ScraperService {
     private final RobotsTxtService robotsTxtService;
-
+    private static final int DEFAULT_BATCH_DELAY_MS = 1000;
     public ScraperService(RobotsTxtService robotsTxtService) {
         this.robotsTxtService = robotsTxtService;
     }
@@ -88,6 +90,36 @@ public class ScraperService {
         } catch (IllegalArgumentException e) {
             throw new ScrapingException("Invalid URL: " + url, e);
         }
+    }
+    public List<BatchScrapeItemResult> scrapeBatch(BatchScrapeRequest request) {
+        int delay = request.getDelayMs() != null ? request.getDelayMs() : DEFAULT_BATCH_DELAY_MS;
+        List<BatchScrapeItemResult> results = new ArrayList<>();
+        List<String> urls = request.getUrls();
+
+        for (int i = 0; i < urls.size(); i++) {
+            String url = urls.get(i);
+            try {
+                ScrapeRequest singleRequest = new ScrapeRequest(
+                        url, request.getSelector(), request.getLinkLimit(), request.getImageLimit());
+                ScrapeResult result = scrape(singleRequest);
+                results.add(BatchScrapeItemResult.success(url, result));
+            } catch (Exception e) {
+                log.warn("Batch scrape failed for {}: {}", url, e.getMessage());
+                results.add(BatchScrapeItemResult.failure(url, e.getMessage()));
+            }
+
+            boolean isLast = (i == urls.size() - 1);
+            if (!isLast && delay > 0) {
+                try {
+                    Thread.sleep(delay);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+
+        return results;
     }
 
     private String metaContent(Document doc, String name) {
