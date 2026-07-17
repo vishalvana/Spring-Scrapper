@@ -23,9 +23,6 @@ public class ScrapeController {
         this.scraperService = scraperService;
         this.scrapeHistoryService = scrapeHistoryService;
     }
-    public ScrapeController(ScraperService scraperService) {
-        this.scraperService = scraperService;
-    }
 
     /**
      * POST /api/scrape
