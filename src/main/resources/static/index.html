@@ -116,6 +116,10 @@
       <label for="url">URL</label>
       <input type="text" id="url" placeholder="https://example.com">
     </div>
+    <div class="field-row">
+      <label for="apiKey">API Key (only needed if security is enabled)</label>
+      <input type="text" id="apiKey" placeholder="leave blank if scraper.security.enabled=false">
+    </div>
     <div class="row">
       <div>
         <label for="selector">CSS selector (optional)</label>
@@ -160,7 +164,8 @@
 
     <div class="section-title">Images</div>
     <div class="imgs" id="r-images"></div>
-  </div>
+
+
 </div>
 
 <script>
@@ -183,6 +188,16 @@ async function runScrape() {
     errorEl.style.display = 'block';
     return;
   }
+  const apiKey = document.getElementById('apiKey').value.trim();
+
+const resp = await fetch('/api/scrape', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    ...(apiKey ? { 'X-API-Key': apiKey } : {})
+  },
+  body: JSON.stringify({ url, selector, linkLimit, imageLimit })
+});
 
   btn.disabled = true;
   statusEl.textContent = 'Scraping...';
